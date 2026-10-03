@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nightwatch 0.2.0 — Documentation</title>
+<style>
+  :root { --green:#2ecc71; --red:#e74c3c; --orange:#f39c12; }
+  body { font-family: "Segoe UI", Arial, sans-serif; font-size: 13px;
+         line-height: 1.55; color: #1c2330; margin: 0 auto; max-width: 860px;
+         padding: 32px 48px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 19px; border-bottom: 2px solid #1c2330; padding-bottom: 4px;
+       margin-top: 32px; }
+  h3 { font-size: 15px; margin-top: 20px; }
+  code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+         font-family: Consolas, monospace; font-size: 12px; }
+  pre { background: #1c2330; color: #e8ecf1; border-radius: 6px; padding: 12px 14px;
+        overflow-x: auto; font-family: Consolas, monospace; font-size: 12px; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #c9cfd9; padding: 6px 9px; text-align: left; }
+  th { background: #eef1f5; }
+  .subtitle { color: #5a6577; margin-bottom: 18px; }
+  .meta { background: #eef1f5; border-radius: 6px; padding: 10px 14px;
+          margin: 14px 0; }
+  .badge { display: inline-block; border-radius: 4px; padding: 1px 8px;
+           font-size: 11px; font-weight: 600; color: #fff; }
+  .sev-HIGH { background: var(--red); } .sev-MEDIUM { background: var(--orange); }
+  .sev-LOW { background: #95a5a6; }
+  .warn { background: #fdf3e3; border-left: 4px solid var(--orange);
+          padding: 8px 12px; border-radius: 0 6px 6px 0; margin: 12px 0; }
+  .pagebreak { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>&#9789; Nightwatch</h1>
+<div class="subtitle">A dependency-free cybersecurity toolkit &mdash; phishing detection, pcap traffic analysis, honeypots and log correlation. Version <b>0.2.0</b></div>
+
+<div class="meta">
+  <b>Python:</b> 3.9+ &nbsp;|&nbsp; <b>Dependencies:</b> none (standard library only) &nbsp;|&nbsp;
+  <b>Tests:</b> 46 (pytest) &nbsp;|&nbsp; <b>License:</b> MIT
+</div>
+
+<h2>1. Overview</h2>
+<p>Nightwatch is a modular cybersecurity toolkit that runs on nothing but the Python
+standard library. It detects phishing links and emails, analyzes raw packet captures
+for scanning, C2 beaconing and suspicious traffic, runs decoy honeypot servers that
+fingerprint attackers, and hunts red flags in server logs &mdash; all through a single
+CLI and an optional browser dashboard.</p>
+
+<h3>Modules</h3>
+<table>
+  <tr><th>Module</th><th>What it does</th></tr>
+  <tr><td><code>phishing</code></td><td>Heuristic URL/email scoring (typosquatting, punycode homographs, URL shorteners, credentials in URL, suspicious TLDs) plus live verification: DNS resolution and redirect-chain following.</td></tr>
+  <tr><td><code>network</code></td><td>Hand-rolled .pcap parser with TCP flow tracking (handshake completion), HTTP request/response extraction, DNS query extraction and C2 beaconing detection (periodic same-peer traffic).</td></tr>
+  <tr><td><code>honeypot</code></td><td>TCP and HTTP decoy servers that log every connection and fingerprint attackers (suspicious path probing, brute-force patterns).</td></tr>
+  <tr><td><code>logs</code></td><td>Collects JSON/JSONL/CSV/syslog/plain-text logs, correlates them with built-in or custom JSON rules, detects bursts and writes markdown reports.</td></tr>
+  <tr><td><code>web</code></td><td>SOC-style dark dashboard served by a stdlib-only HTTP server. No framework, no build step.</td></tr>
+</table>
+
+<h2>2. Installation</h2>
+<pre><code>pip install .</code></pre>
+<p>or run directly from the repository root without installing. Development setup:</p>
+<pre><code>pip install -r requirements-dev.txt
+python -m pytest</code></pre>
+
+<h2>3. Command Line Reference</h2>
+
+<h3>phish &mdash; phishing detection</h3>
+<pre><code>python -m nightwatch.cli phish --url &lt;URL&gt; [--verify] [--json]
+python -m nightwatch.cli phish --file &lt;email.txt&gt; [--json]</code></pre>
+<table>
+  <tr><th>Option</th><th>Description</th></tr>
+  <tr><td><code>--url</code></td><td>URL to score (0&ndash;100 risk score).</td></tr>
+  <tr><td><code>--file</code></td><td>Text file (email body) to scan; every link inside is scored.</td></tr>
+  <tr><td><code>--verify</code></td><td>Live verification: resolve the domain via DNS, follow the redirect chain manually and report the final destination.</td></tr>
+  <tr><td><code>--json</code></td><td>Machine-readable output.</td></tr>
+</table>
+<p>Exit codes: <code>0</code> = safe, <code>1</code> = suspicious/phishing, <code>2</code> = usage error &mdash; CI-friendly.</p>
+
+<h3>pcap &mdash; traffic analysis</h3>
+<pre><code>python -m nightwatch.cli pcap &lt;capture.pcap&gt; [--json]</code></pre>
+<p>Output includes packet/protocol counts, unique and <i>completed</i> (fully
+handshaken) connections, websites visited (HTTP Hosts), user agents, DNS queries,
+possible C2 beacons and severity-ranked findings.</p>
+
+<h3>honeypot &mdash; decoy servers</h3>
+<pre><code>python -m nightwatch.cli honeypot --http --port 8080
+python -m nightwatch.cli honeypot --port 2222 --respond "220 fake ftp" --out honey.jsonl</code></pre>
+<table>
+  <tr><th>Option</th><th>Description</th></tr>
+  <tr><td><code>--host</code></td><td>Bind address (default <code>0.0.0.0</code>).</td></tr>
+  <tr><td><code>--port</code></td><td>Listen port (default <code>8080</code>).</td></tr>
+  <tr><td><code>--http</code></td><td>Fake HTTP server instead of raw TCP.</td></tr>
+  <tr><td><code>--respond</code></td><td>Text to send back to each TCP client (banner).</td></tr>
+  <tr><td><code>--out</code></td><td>JSONL log file (default <code>honeypot.jsonl</code>).</td></tr>
+</table>
+
+<h3>logs &mdash; log analysis</h3>
+<pre><code>python -m nightwatch.cli logs &lt;file-or-dir&gt; [--rules &lt;rules.json&gt;] [--out report.md] [--json]</code></pre>
+<table>
+  <tr><th>Option</th><th>Description</th></tr>
+  <tr><td><code>--rules</code></td><td>JSON file with custom detection rules (see section 6).</td></tr>
+  <tr><td><code>--out</code></td><td>Write a markdown report to this path.</td></tr>
+  <tr><td><code>--json</code></td><td>Machine-readable output.</td></tr>
+</table>
+
+<h3>web &mdash; dashboard</h3>
+<pre><code>python -m nightwatch.cli web [--host 127.0.0.1] [--port 8000] [--no-browser]</code></pre>
+
+<div class="warn">Port 8000 may already be in use on your machine; use <code>--port 8001</code> to pick a free port.</div>
+
+<h2>4. Web Dashboard</h2>
+<p>The dashboard is served by a stdlib <code>ThreadingHTTPServer</code> &mdash; no Flask,
+no npm, no build step. Open the printed URL in a browser.</p>
+<table>
+  <tr><th>Tab</th><th>Features</th></tr>
+  <tr><td>Phishing</td><td>Check a link or paste an email. Optional <i>live verification</i> checkbox: shows resolved IPs, the full redirect chain, the final destination and a warning when the link crosses domains.</td></tr>
+  <tr><td>Traffic</td><td>Upload a .pcap: packets/connections/established-connection stats, protocols, top sources, destination ports, websites visited, DNS queries, possible C2 beacons and findings.</td></tr>
+  <tr><td>Honeypot</td><td>Start/stop TCP or HTTP decoys, watch live connections every 2 s, clear logs and run attacker fingerprint analysis.</td></tr>
+  <tr><td>Logs</td><td>Upload JSON/JSONL/CSV/syslog/text logs; view findings and bursts; download a markdown report.</td></tr>
+</table>
+
+<h3>HTTP API</h3>
+<pre><code>GET  /api/status                 server version + honeypot state
+GET  /api/honeypot/status        honeypot running state
+GET  /api/honeypot/events        last 200 logged events
+GET  /api/honeypot/analysis      attacker fingerprint analysis
+POST /api/honeypot/start         {"mode":"http|tcp","host","port","respond"}
+POST /api/honeypot/stop
+POST /api/honeypot/clear
+POST /api/phish                  {"url","verify":true}  &rarr; score + verification
+POST /api/phish/email            {"text": "..."}
+POST /api/pcap                   raw .pcap bytes in body
+POST /api/logs?name=app.log      raw log file bytes in body</code></pre>
+
+<h2 class="pagebreak">5. Findings Format</h2>
+<p>All modules report suspicious activity in one unified shape:</p>
+<pre><code>{
+  "severity": "HIGH",      // HIGH | MEDIUM | LOW
+  "label": "possible-beacon",
+  "count": 6,              // number of involved events
+  "detail": "10.0.0.1 -&gt; 203.0.113.9:443 at ~5s intervals"
+}</code></pre>
+
+<h3>Detection labels</h3>
+<table>
+  <tr><th>Module</th><th>Label</th><th>Severity</th><th>Meaning</th></tr>
+  <tr><td>network</td><td><code>syn-scan</code></td><td><span class="badge sev-HIGH">HIGH</span></td><td>A source sent SYN probes to 3+ distinct ports.</td></tr>
+  <tr><td>network</td><td><code>icmp-sweep</code></td><td><span class="badge sev-MEDIUM">MEDIUM</span></td><td>ICMP echo probes to 5+ destinations.</td></tr>
+  <tr><td>network</td><td><code>sensitive-port-traffic</code></td><td><span class="badge sev-MEDIUM">MEDIUM</span></td><td>Traffic to admin/database ports (23, 445, 1433, 3306, 6379, 27017, 3389, 5555, 1337, 5900).</td></tr>
+  <tr><td>network</td><td><code>possible-beacon</code></td><td><span class="badge sev-HIGH">HIGH</span></td><td>5+ packets to one peer at near-regular intervals (&lt;30% variance).</td></tr>
+  <tr><td>honeypot</td><td><code>sensitive-path-probing</code></td><td><span class="badge sev-HIGH">HIGH</span></td><td>Attacker hit sensitive paths (admin, wp-login, .env, etc.).</td></tr>
+  <tr><td>honeypot</td><td><code>brute-force-pattern</code></td><td><span class="badge sev-MEDIUM">MEDIUM</span></td><td>5+ requests from a single source.</td></tr>
+  <tr><td>logs</td><td><code>failed-login</code>, <code>sql-injection</code>, <code>xss</code>, <code>path-traversal</code>, <code>privileged-account</code>, <code>forbidden-access</code>, <code>malware-indicator</code>, <code>invalid-user</code>, <code>denied</code>, &hellip;</td><td>&mdash;</td><td>Built-in regex rules over normalized log messages (see <code>DEFAULT_RULES</code>).</td></tr>
+</table>
+
+<h2>6. Custom Log Rules</h2>
+<p>Rules are regex patterns with a severity and a label, supplied as a JSON list:</p>
+<pre><code>[
+  {"pattern": "token expired", "severity": "HIGH", "label": "token-expiry"},
+  {"pattern": "disk full",     "severity": "LOW",  "label": "disk-space"}
+]</code></pre>
+<pre><code>python -m nightwatch.cli logs app.log --rules rules.json --out report.md</code></pre>
+<p>Rules match case-insensitively against the message. A rule without a
+<code>pattern</code> is rejected with an error.</p>
+
+<h2>7. Phishing Scoring</h2>
+<p>URLs are scored 0&ndash;100; verdicts: <code>safe</code> (0&ndash;39),
+<code>suspicious</code> (40&ndash;69), <code>phishing</code> (70+). Signals include:</p>
+<ul>
+  <li>Brand typosquatting via Levenshtein distance (paypai &rarr; paypal, goolge &rarr; google)</li>
+  <li>Punycode homograph domains (<code>xn--&hellip;</code>)</li>
+  <li>URL shorteners (bit.ly and similar, score 40)</li>
+  <li>Credentials embedded in the URL (<code>paypal.com@evil.io</code>)</li>
+  <li>IP-literal hosts, hyphenated domains, suspicious TLDs</li>
+  <li>Phishing keywords in path/host (verify, login, secure, account&hellip;)</li>
+</ul>
+<p>Live verification (<code>--verify</code>) resolves the domain, walks the redirect
+chain without following it blindly, and flags cross-domain redirects &mdash; so a
+"safe-looking" short link that lands on a different domain is exposed.</p>
+
+<h2 class="pagebreak">8. Project Layout</h2>
+<pre><code>nightwatch/
+  __init__.py         version
+  cli.py              argparse CLI (phish / pcap / honeypot / logs / web)
+  phishing/
+    detector.py       heuristics + verify_url (DNS + redirect chain)
+  network/
+    pcap.py           hand-rolled pcap / Ethernet / IPv4 / TCP / UDP parser
+    analyzer.py       flows, handshakes, HTTP/DNS extraction, beaconing
+  honeypot/
+    server.py         TCP + HTTP decoy servers
+    tracker.py        attacker fingerprinting + unified findings
+  logs/
+    collector.py      JSON / JSONL / CSV / syslog / text parsing
+    analyzer.py       DEFAULT_RULES, load_rules(), bursts, markdown reports
+  web/
+    server.py         stdlib HTTP API (ThreadingHTTPServer)
+    static/           index.html, app.js, styles.css (dark SOC UI)
+tests/                pytest suite &mdash; 46 tests, no network access required
+pyproject.toml        packaging; `pip install .` gives the `nightwatch` command
+README.md             quick-start guide</code></pre>
+
+<h2>9. Development</h2>
+<h3>Run the tests</h3>
+<pre><code>python -m pytest tests/ -q</code></pre>
+<h3>Console script</h3>
+<p>After <code>pip install .</code>, a <code>nightwatch</code> command is available
+that behaves identically to <code>python -m nightwatch.cli</code>.</p>
+
+<h2>10. Changelog</h2>
+<table>
+  <tr><th>Version</th><th>Highlights</th></tr>
+  <tr><td>0.1.0</td><td>Core modules, stdlib web dashboard, heuristic phishing scoring, basic pcap analysis, honeypots, log rules.</td></tr>
+  <tr><td>0.2.0</td><td>TCP flow tracking + handshake completion; HTTP/DNS extraction; C2 beacon detection; live phishing verification; custom JSON log rules; unified <code>{severity,label,count,detail}</code> findings; pyproject packaging and README.</td></tr>
+</table>
+
+</body>
+</html>

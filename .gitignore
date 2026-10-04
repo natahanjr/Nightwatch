@@ -5,3 +5,6 @@ venv/
 *.jsonl
 reports/
 honeypot.jsonl
+build/
+dist/
+*.egg-info/

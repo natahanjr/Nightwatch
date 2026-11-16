@@ -181,7 +181,12 @@ class NightwatchHandler(BaseHTTPRequestHandler):
     def _serve_static(self, rel):
         target = (STATIC_DIR / rel).resolve()
         root = STATIC_DIR.resolve()
-        if not str(target).startswith(str(root)) or not target.is_file():
+        try:
+            target.relative_to(root)
+        except ValueError:
+            self._send(404, "text/plain", b"not found")
+            return
+        if not target.is_file():
             self._send(404, "text/plain", b"not found")
             return
         if target.suffix == ".html":

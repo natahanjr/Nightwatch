@@ -344,7 +344,10 @@ class RandomForestClassifier(Model):
                 in_bag[position].append(index)
         correct = scored = 0
         for position in range(n):
-            voters = [self.estimators_[i] for i in in_bag[position]]
+            # Use out-of-bag estimators (those that did NOT see this row)
+            oob_indices = [i for i in range(self.n_estimators)
+                           if i not in in_bag[position]]
+            voters = [self.estimators_[i] for i in oob_indices]
             if not voters:
                 continue
             positive = math.fsum(
@@ -438,7 +441,7 @@ class GradientBoostingClassifier(Model):
             for position, row in enumerate(X):
                 leaf, _ = _descend(tree.root_, row)
                 value = leaf.n_positive / (leaf.n_samples or 1)
-                raw[position] += self.learning_rate * (2.0 * value - 1.0)
+                raw[position] -= self.learning_rate * (2.0 * value - 1.0)
             self.trees_.append(tree)
             self.train_loss_.append(math.fsum(
                 -(t * math.log(max(1e-15, self._sigmoid(r))) +
@@ -457,7 +460,7 @@ class GradientBoostingClassifier(Model):
             for tree in self.trees_:
                 leaf, _ = _descend(tree.root_, row)
                 value = leaf.n_positive / (leaf.n_samples or 1)
-                score += self.learning_rate * (2.0 * value - 1.0)
+                score += self.learning_rate * (1.0 - 2.0 * value)
             out.append(score)
         return out
 

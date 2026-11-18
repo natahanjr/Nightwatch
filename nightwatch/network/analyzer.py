@@ -91,7 +91,11 @@ def _decode_dns_name(payload, i):
     labels = []
     end = None
     jumped = False
+    seen = set()
     while i < len(payload):
+        if i in seen:  # compression-pointer cycle → malformed packet
+            return None, None
+        seen.add(i)
         ln = payload[i]
         if ln & 0xC0 == 0xC0:  # compression pointer
             if i + 1 >= len(payload):

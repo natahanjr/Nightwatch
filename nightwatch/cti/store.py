@@ -263,8 +263,11 @@ class IndicatorStore:
                     yield cand, "domain"
             return
         if kind in ("domain", "ip"):
-            for cand in _domain_candidates(raw):
-                yield cand, "ip" if is_ip(cand) else "domain"
+            if is_ip(raw):
+                yield raw, "ip"
+            else:
+                for cand in _domain_candidates(raw):
+                    yield cand, "ip" if is_ip(cand) else "domain"
             return
         yield raw.lower(), "hash"
 

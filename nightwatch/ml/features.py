@@ -112,8 +112,9 @@ def _ratio(count, total):
 
 def _is_ip_host(host):
     parts = host.split(".")
-    return len(parts) == 4 and all(p.isdigit() and len(p) <= 3
-                                   and 0 <= int(p) <= 255 for p in parts)
+    return (len(parts) == 4 and all(
+        p.isdigit() and len(p) <= 3 and 0 <= int(p) <= 255
+        and (p == "0" or not p.startswith("0")) for p in parts))
 
 
 def _cti_features(cti_hit):

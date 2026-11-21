@@ -14,16 +14,16 @@ SECRET = re.compile(r"(password|passwd|secret|api[_-]?key|token)\s*[:=]\s*[\"']?
 
 def _text_findings(text):
     findings = []
-    low = text
-    if '"*"' in low and "Principal" in low:
+    low = text.lower()
+    if '"*"' in low and "principal" in low:
         findings.append("Wildcard principal \"*\"")
     if "0.0.0.0/0" in low:
         findings.append("Open ingress 0.0.0.0/0")
     if "public-read" in low or "public-write" in low:
         findings.append("Public storage ACL")
-    if '"HTTP"' in low or "Protocol=HTTP" in low:
+    if '"http"' in low or "protocol=http" in low:
         findings.append("Plaintext HTTP listener (no TLS)")
-    if "aws:MultiFactorAuthPresent" not in low and ("iam" in low or "policy" in low):
+    if "aws:multifactorauthpresent" not in low and ("iam" in low or "policy" in low):
         findings.append("No MFA condition enforced")
     if WEAK_CRYPTO.search(low):
         findings.append("Weak cryptography (md5/sha1/des/rc4)")

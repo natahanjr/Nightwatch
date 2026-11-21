@@ -234,7 +234,10 @@ def _reassemble(segments):
             stream[seq - base + k] = b
     if not stream:
         return b""
-    return bytes(stream.get(i, 0) for i in range(max(stream) + 1))
+    # Return bytes in order, only for positions that exist in the stream,
+    # avoiding allocation of a massive bytes object when sequence numbers
+    # have large gaps (which would be a denial-of-service vector).
+    return bytes(stream[i] for i in sorted(stream))
 
 
 def _detect_beacons(times_by_peer, srcs_by_peer):

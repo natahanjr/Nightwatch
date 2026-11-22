@@ -322,7 +322,7 @@ def check_url(url, blocklist=None, cti=None):
         flags.append("digits-in-domain")
         score += 10
 
-    if parsed.scheme == "http" and matched_keywords:
+    if parsed.scheme.lower() == "http" and matched_keywords:
         flags.append("insecure-http")
         score += 10
 

@@ -191,6 +191,8 @@ def _parse_one_request(buf):
                 content_length = int(v)
             except ValueError:
                 content_length = 0
+    if content_length < 0:
+        return None
     if len(rest) < content_length:
         return None
     body = rest[:content_length]

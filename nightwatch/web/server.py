@@ -165,6 +165,8 @@ class NightwatchHandler(BaseHTTPRequestHandler):
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length") or 0)
+        if length < 0:
+            raise ValueError("Invalid Content-Length header")
         if length > MAX_UPLOAD:
             raise ValueError("Upload exceeds the maximum allowed size")
         return self.rfile.read(length) if length else b""

@@ -47,9 +47,14 @@ def parse_jsonl_log(path):
     with open(path, "r", encoding="utf-8-sig") as f:
         for line in f:
             line = line.strip()
-            if line:
-                events.append(_normalize(json.loads(line),
-                                         os.path.basename(path)))
+            if not line:
+                continue
+            try:
+                raw = json.loads(line)
+            except json.JSONDecodeError:
+                # One malformed line must not crash the whole analysis.
+                continue
+            events.append(_normalize(raw, os.path.basename(path)))
     return events
 
 

@@ -57,6 +57,11 @@ def _is_ipv4(value):
             return False
         if int(part) > 255:
             return False
+        # Reject leading-zero octets (e.g. 01.02.03.04): they are ambiguous
+        # (some systems read them as octal) and nightwatch.ml.features plus
+        # nightwatch.threat_intel already refuse them, so the store must agree.
+        if part != "0" and part.startswith("0"):
+            return False
     return True
 
 

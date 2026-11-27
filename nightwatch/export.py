@@ -7,6 +7,7 @@ network calls are best-effort and time-bounded so they never block the CLI.
 
 import json
 import time
+import http.client
 import urllib.error
 import urllib.request
 
@@ -38,18 +39,24 @@ def forward_webhook(url, payload, token=None, timeout=5):
     Never raises - failures are reported in the returned dict so callers can
     decide whether to fall back to local persistence.
     """
-    body = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=body, method="POST")
-    req.add_header("Content-Type", "application/json")
-    if token:
-        req.add_header("Authorization", f"Bearer {token}")
     try:
+        body = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(url, data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        if token:
+            req.add_header("Authorization", f"Bearer {token}")
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return {"ok": True, "status": resp.status}
     except urllib.error.HTTPError as e:
         return {"ok": False, "status": e.code, "error": str(e)}
     except urllib.error.URLError as e:
         return {"ok": False, "error": str(e.reason)}
+    except http.client.HTTPException as e:
+        # http.client raises InvalidURL/BadStatusLine/etc. for bad URLs.
+        return {"ok": False, "error": str(e)}
+    except (ValueError, TypeError) as e:
+        # Malformed URL or non-serializable payload: report instead of raising.
+        return {"ok": False, "error": str(e)}
 
 
 def dispatch(findings, source="nightwatch", jsonl_path=None, webhook_url=None,

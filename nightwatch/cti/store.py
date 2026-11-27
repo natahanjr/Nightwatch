@@ -172,7 +172,7 @@ def normalise(record, source=None, now=None):
     if kind not in TYPES:
         return None
     out = dict(_EMPTY)
-    out["value"] = value if kind in ("hash",) else value.lower()
+    out["value"] = value.lower()
     out["type"] = kind
     out["source"] = record.get("source") or source
     if out["source"]:

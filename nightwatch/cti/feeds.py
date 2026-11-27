@@ -225,7 +225,14 @@ def parse_plaintext(raw):
 
 def parse_rss(raw):
     """RSS 2.0 or Atom. Each item's title/description becomes an indicator."""
-    root = ET.fromstring(raw)
+    try:
+        root = ET.fromstring(raw)
+    except ET.ParseError:
+        # Malformed RSS/Atom XML cannot be parsed; return no indicators
+        # rather than crashing the whole feed refresh (ParseError is a
+        # SyntaxError, not a ValueError, so it is not caught by the cache's
+        # generic parse-error fallback).
+        return []
     if root.tag.rsplit("}", 1)[-1] == "rss":
         items = root.iter("item")
     else:

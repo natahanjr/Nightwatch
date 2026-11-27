@@ -28,7 +28,9 @@ def _indicator_type(value):
     if v.startswith(("http://", "https://")) or "://" in v or "/" in v:
         return "url"
     parts = v.split(".")
-    if len(parts) == 4 and all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+    if (len(parts) == 4 and all(
+            p.isdigit() and 0 <= int(p) <= 255
+            and (p == "0" or not p.startswith("0")) for p in parts)):
         return "ip"
     return "domain"
 

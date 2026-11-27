@@ -10,8 +10,13 @@ def load_logs(path):
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if line:
+            if not line:
+                continue
+            try:
                 events.append(json.loads(line))
+            except json.JSONDecodeError:
+                # One malformed line must not crash the whole analysis.
+                continue
     return events
 
 

@@ -213,11 +213,18 @@ class IndicatorStore:
         bucket = self._by_type[norm["type"]]
         existing = bucket.get(norm["value"])
         if existing is not None:
+            old_sources = set(existing["sources"])
+            old_tags = set(existing["tags"])
             norm = _merge(existing, norm)
+        else:
+            old_sources = set()
+            old_tags = set()
         bucket[norm["value"]] = norm
-        for src in norm["sources"]:
+        # Only count sources/tags that were not already present on the record,
+        # otherwise re-adding the same indicator inflates the counters.
+        for src in set(norm["sources"]) - old_sources:
             self._sources[src] += 1
-        for tag in norm["tags"]:
+        for tag in set(norm["tags"]) - old_tags:
             self._tags[tag] += 1
         return norm
 

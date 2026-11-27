@@ -396,7 +396,7 @@ def analyze_pcap(path):
         })
     for sni, count in tls_sni.items():
         low = sni.lower()
-        if any(sni.endswith(t) for t in SUSPICIOUS_TLDS):
+        if any(low.endswith(t) for t in SUSPICIOUS_TLDS):
             findings.append({
                 "severity": "HIGH",
                 "label": "tls-suspicious-sni",

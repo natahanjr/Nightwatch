@@ -260,8 +260,10 @@ def _read_pcapng(data):
             yield _parse_packet(pkt, ts, linktypes.get(iface,
                                                         LINKTYPE_ETHERNET))
         elif btype == 0x00000003:  # Simple Packet Block
-            incl_len = struct.unpack(cur_en + "I", body[4:8])[0]
-            pkt = body[8:8 + incl_len]
+            # SPB body: Original Packet Length (4) then packet data (padded).
+            orig_len = struct.unpack(cur_en + "I", body[0:4])[0]
+            pkt = body[4:4 + orig_len] if orig_len <= len(body) - 4 \
+                else body[4:]
             yield _parse_packet(pkt, 0.0, linktypes.get(0,
                                                         LINKTYPE_ETHERNET))
         pos += blen
